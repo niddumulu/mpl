@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator MPL Lengkap</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    padding: 30px;
+}
+.card {
+    background: white;
+    padding: 20px;
+    max-width: 520px;
+    margin: auto;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+h2 { text-align: center; }
+label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+input {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+button {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-prod { background: #28a745; color: white; }
+.btn-income { background: #007bff; color: white; }
+.btn-3hari { background: #6f42c1; color: white; }
+button:hover { opacity: 0.9; }
+.result {
+    margin-top: 15px;
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 1.6;
+}
+hr { margin: 20px 0; }
+</style>
+
+</head>
+<body>
+
+<div class="card">
+    <h2>Kalkulator MPL</h2>
+
+    <!-- 1️⃣ PRODUKTIVITAS -->
+    <h3>1️⃣ Hitung Produktivitas</h3>
+
+    <label>Energy (E)</label>
+    <input type="number" id="energy" step="0.01" value="99">
+
+    <label>Economic Score (ES)</label>
+    <input type="number" id="es" step="0.01" value="99">
+
+    <label>Skill (S)</label>
+    <input type="number" id="skill" step="0.01" value="100">
+
+    <label>Country Bonus (C)</label>
+    <input type="number" id="country" step="0.01" value="10">
+
+    <label>Organization Bonus (O)</label>
+    <input type="number" id="org" step="0.01" value="20">
+
+    <button class="btn-prod" onclick="hitungProduktivitas()">
+        Hitung Produktivitas
+    </button>
+
+    <div class="result" id="hasilProduktivitas"></div>
+
+    <hr>
+
+    <!-- 2️⃣ INCOME 1 HARI -->
+    <h3>2️⃣ Hitung Income (1 Work)</h3>
+
+    <label>Gaji per Jam (Wage)</label>
+    <input type="number" id="wage" step="0.0001">
+
+    <label>Pajak Negara (%)</label>
+    <input type="number" id="taxNegara" step="0.01">
+
+    <label>Pajak Recruiter (%)</label>
+    <input type="number" id="taxRecruiter" step="0.01">
+
+    <label>Mata Uang</label>
+    <input type="text" id="currency" placeholder="Gold / IDR / USD">
+
+    <button class="btn-income" onclick="hitungIncome()">
+        Hitung Income Bersih (1 Work)
+    </button>
+
+    <div class="result" id="hasilIncome"></div>
+
+    <hr>
+
+    <!-- 3️⃣ 3 HARI + WB -->
+    <h3>3️⃣ Hitung 3 Hari + Work Bonus</h3>
+
+    <label>Work Bonus</label>
+    <input type="number" id="workBonus" step="0.01" placeholder="Contoh: 50">
+
+    <button class="btn-3hari" onclick="hitung3HariWB()">
+        Hitung 3 Hari + WB
+    </button>
+
+    <div class="result" id="hasil3Hari"></div>
+
+</div>
+
+<script>
+
+let productivityGlobal = 0;
+
+function hitungProduktivitas() {
+    let E = parseFloat(document.getElementById("energy").value) || 0;
+    let ES = parseFloat(document.getElementById("es").value) || 0;
+    let S = parseFloat(document.getElementById("skill").value) || 0;
+    let C = parseFloat(document.getElementById("country").value) || 0;
+    let O = parseFloat(document.getElementById("org").value) || 0;
+
+    productivityGlobal = (E * 0.45) + (ES * 0.30) + (S * 0.25) + C + O;
+
+    document.getElementById("hasilProduktivitas").innerHTML =
+        "Produktivitas: " + productivityGlobal.toFixed(3) + " %";
+}
+
+function hitungIncome() {
+    let wage = parseFloat(document.getElementById("wage").value) || 0;
+    let taxNegara = parseFloat(document.getElementById("taxNegara").value) || 0;
+    let taxRecruiter = parseFloat(document.getElementById("taxRecruiter").value) || 0;
+    let currency = document.getElementById("currency").value || "";
+
+    if (productivityGlobal === 0) {
+        document.getElementById("hasilIncome").innerHTML =
+            "Hitung produktivitas terlebih dahulu.";
+        return;
+    }
+
+    let kotorHarian = wage * 4 * (productivityGlobal / 100);
+
+    let potNegara = kotorHarian * (taxNegara / 100);
+    let potRecruiter = kotorHarian * (taxRecruiter / 100);
+
+    let incomeBersih = kotorHarian - potNegara - potRecruiter;
+
+    document.getElementById("hasilIncome").innerHTML =
+        "Kotor Harian: " + kotorHarian.toFixed(4) + " " + currency + "<br>" +
+        "Potongan Negara: -" + potNegara.toFixed(4) + " " + currency + "<br>" +
+        "Potongan Recruiter: -" + potRecruiter.toFixed(4) + " " + currency + "<br><br>" +
+        "💰 Income Bersih: " + incomeBersih.toFixed(4) + " " + currency;
+}
+
+function hitung3HariWB() {
+    let wage = parseFloat(document.getElementById("wage").value) || 0;
+    let taxNegara = parseFloat(document.getElementById("taxNegara").value) || 0;
+    let taxRecruiter = parseFloat(document.getElementById("taxRecruiter").value) || 0;
+    let wb = parseFloat(document.getElementById("workBonus").value) || 0;
+    let currency = document.getElementById("currency").value || "";
+
+    if (productivityGlobal === 0) {
+        document.getElementById("hasil3Hari").innerHTML =
+            "Hitung produktivitas terlebih dahulu.";
+        return;
+    }
+
+    // 1 WORK (4 jam)
+    let kotor1Work = wage * 4 * (productivityGlobal / 100);
+
+    let potNegara1 = kotor1Work * (taxNegara / 100);
+    let potRecruiter1 = kotor1Work * (taxRecruiter / 100);
+
+    let bersih1Work = kotor1Work - potNegara1 - potRecruiter1;
+
+    // 6 WORK (3 hari)
+    let totalBersih6Work = bersih1Work * 6;
+
+    // WB adalah nominal tetap
+    let finalIncome = totalBersih6Work + wb;
+
+    document.getElementById("hasil3Hari").innerHTML =
+        "Bersih 1 Work: " + bersih1Work.toFixed(4) + " " + currency + "<br>" +
+        "Total Bersih 6 Work: " + totalBersih6Work.toFixed(4) + " " + currency + "<br>" +
+        "Work Bonus: +" + wb.toFixed(4) + " " + currency + "<br><br>" +
+        "💰 Final Income 3 Hari + WB: " + finalIncome.toFixed(4) + " " + currency;
+}
+
+</script>
+
+</body>
+</html>
