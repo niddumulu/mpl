@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulator Strategi Work WIB (Fixed Time)</title>
+<title>MPL PRO AUTO</title>
 
 <style>
 body{
@@ -12,237 +12,206 @@ body{
     padding:15px;
 }
 .container{
-    background:white;
-    max-width:750px;
+    max-width:1000px;
     margin:auto;
-    padding:20px;
+    background:white;
+    padding:15px;
     border-radius:10px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
-input,select,button{
-    width:100%;
+h2{text-align:center;}
+
+input,button{
     padding:8px;
-    margin:5px 0 15px 0;
+    margin:5px 0;
+    width:100%;
 }
+
 button{
-    background:#2d89ef;
+    background:#2c7be5;
     color:white;
     border:none;
     cursor:pointer;
-    font-size:16px;
 }
-button:hover{
-    background:#1b5fa7;
-}
-.card{
-    background:#fff;
-    padding:15px;
-    border-radius:8px;
+
+.flex{
+    display:flex;
+    gap:20px;
     margin-top:15px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
-h2{
-    text-align:center;
+
+.log{
+    flex:1;
+    background:#eef3ff;
+    padding:10px;
+    border-radius:8px;
+    max-height:350px;
+    overflow:auto;
+    font-size:14px;
+}
+
+.chartBox{
+    flex:1;
+}
+
+canvas{
+    width:100%;
+    height:300px;
+    background:white;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+
+.safe{color:green;font-weight:bold;}
+.danger{color:red;font-weight:bold;}
+.warning{color:orange;font-weight:bold;}
+
+@media(max-width:768px){
+.flex{flex-direction:column;}
 }
 </style>
 </head>
 <body>
 
 <div class="container">
-<h2>🔥 Strategi Work Optimal ≥70 (Jam WIB Akurat)</h2>
+<h2>MPL PRO AUTO OPTIMIZER</h2>
 
-<label>Energy Awal (0-100)</label>
-<input type="number" id="energyAwal" value="100" min="0" max="100">
+<label>Income Harian</label>
+<input type="number" id="income" value="40">
 
-<label>Pilih Rumah</label>
-<select id="house">
-<option value="0">Tidak Ada</option>
-<option value="0.50">Small House (+0.50/jam)</option>
-<option value="0.83">Nice Apartment (+0.83/jam)</option>
-<option value="1.46">Mansion (+1.46/jam)</option>
-<option value="1.67">Castle (+1.67/jam)</option>
-</select>
+<label>Energi Awal</label>
+<input type="number" id="startEnergy" value="67">
 
-<label>Jumlah Clothes ⭐ (0.42/jam)</label>
-<input type="number" id="star1" value="0" min="0">
+<button onclick="optimize()">Cari Strategi Optimal</button>
 
-<label>Jumlah Clothes ⭐⭐ (1.25/jam)</label>
-<input type="number" id="star2" value="0" min="0">
-
-<button onclick="cariOptimal()">🔥 Cari Jam Terbaik</button>
-
-<div id="output"></div>
+<div class="flex">
+<div class="log" id="output"></div>
+<div class="chartBox">
+<canvas id="chart"></canvas>
+</div>
+</div>
 </div>
 
 <script>
+function simulate(koran, startEnergy){
 
-// =====================
-// HITUNG BONUS
-// =====================
-function hitungBonus(){
-    let house = parseFloat(document.getElementById("house").value);
-    let s1 = parseInt(document.getElementById("star1").value) || 0;
-    let s2 = parseInt(document.getElementById("star2").value) || 0;
+let energy = startEnergy;
 
-    return house + (s1 * 0.42) + (s2 * 1.25);
-}
+const minWork = 35;
+const workCost = 25;
 
-// =====================
-// KONVERSI SERVER ➜ WIB
-// Jam ke-1 = 00:00 Server
-// WIB = Server + 7 jam 4 menit
-// =====================
-function serverToWIB(serverHour){
+const regenPerHour = 3;
+const decayPerHour = 2;
+const castlePerHour = 40/24;
+const bajuPerHour = 10/24;
 
-    // Jam ke-1 = 00:00 Server
-    let serverMinutes = (serverHour - 1) * 60;
+let work1=false;
+let work2=false;
 
-    // Tambah 7 jam 4 menit
-    serverMinutes += (7 * 60) + 4;
+let energyHistory=[];
 
-    if(serverMinutes >= 1440){
-        serverMinutes -= 1440;
-    }
+for(let hour=0; hour<24; hour++){
 
-    let hour = Math.floor(serverMinutes / 60);
-    let minute = serverMinutes % 60;
+    energy += regenPerHour + castlePerHour + bajuPerHour;
+    energy -= decayPerHour;
 
-    hour = hour.toString().padStart(2,"0");
-    minute = minute.toString().padStart(2,"0");
-
-    return hour + ":" + minute;
-}
-
-// =====================
-// SIMULASI ENGINE
-// =====================
-function simulasi(j1, j2, jOT){
-
-    let energy = parseFloat(document.getElementById("energyAwal").value);
-    let totalBonus = hitungBonus();
-
-    let workCount = 0;
-    let otUsed = false;
-    let lastWork = -10;
-
-    let energyBeforeWork = [];
-
-    for(let i=1; i<=24; i++){
-
-        // DECAY
-        let decay = energy * ((energy/5000) + 0.016);
-        energy -= decay;
-
-        // BONUS
-        energy += totalBonus;
-
-        // Recovery kecil
-        if(energy < 10){
-            energy += 1;
-        }
-
-        // CEK KERJA
-        if(i === j1 || i === j2 || i === jOT){
-
-            if(i < lastWork + 4){
-                return null;
-            }
-
-            energyBeforeWork.push(energy);
-
-            if(i === jOT){
-                if(workCount === 2 && !otUsed && energy >= 70){
-                    energy *= 0.75;
-                    otUsed = true;
-                    lastWork = i;
-                } else {
-                    return null;
-                }
-            } else {
-                if(workCount < 2 && energy >= 70){
-                    energy *= 0.75;
-                    workCount++;
-                    lastWork = i;
-                } else {
-                    return null;
-                }
-            }
-        }
-
-        if(energy > 100) energy = 100;
-        if(energy < 0) energy = 0;
-    }
-
-    if(energyBeforeWork.length === 3){
-        return {
-            finalEnergy: energy.toFixed(2),
-            energies: energyBeforeWork.map(e => e.toFixed(2))
-        };
-    }
-
-    return null;
-}
-
-// =====================
-// CARI KOMBINASI TERBAIK
-// =====================
-function cariOptimal(){
-
-    let best = null;
-    let bestEnergy = 0;
-
-    for(let j1=1; j1<=24; j1++){
-        for(let j2=j1+4; j2<=24; j2++){
-            for(let jOT=j2+4; jOT<=24; jOT++){
-
-                let result = simulasi(j1, j2, jOT);
-
-                if(result){
-                    if(parseFloat(result.finalEnergy) > bestEnergy){
-                        bestEnergy = parseFloat(result.finalEnergy);
-                        best = {j1, j2, jOT, result};
-                    }
-                }
-            }
+    if(hour===8){
+        energy += (koran*2)/2;
+        if(energy>=minWork){
+            energy -= workCost;
+            work1=true;
         }
     }
 
-    let output = document.getElementById("output");
+    if(hour===20){
+        energy += (koran*2)/2;
+        if(energy>=minWork){
+            energy -= workCost;
+            work2=true;
+        }
+    }
 
-    if(best){
-        output.innerHTML = `
-        <div class="card">
-        <h3>🔥 Kombinasi Optimal</h3>
+    energy=Math.max(0,energy);
+    energyHistory.push(energy);
+}
 
-        <p>Kerja 1 : ${serverToWIB(best.j1)} WIB 
-        (Server ${best.j1 - 1}:00)</p>
+return {work1,work2,energyHistory};
+}
 
-        <p>Kerja 2 : ${serverToWIB(best.j2)} WIB 
-        (Server ${best.j2 - 1}:00)</p>
+function optimize(){
 
-        <p>OT : ${serverToWIB(best.jOT)} WIB 
-        (Server ${best.jOT - 1}:00)</p>
+let income = parseFloat(document.getElementById("income").value);
+let startEnergy = parseFloat(document.getElementById("startEnergy").value);
 
-        <hr>
-        <strong>Energy Akhir Hari: ${best.result.finalEnergy}</strong>
-        </div>
-        `;
-    } else {
-        output.innerHTML = `
-        <div class="card">
-        ⚠ Tidak ada kombinasi kerja 3x dengan energy ≥ 70.
-        <br><br>
-        💡 Saran:
-        <ul>
-        <li>Tambah Clothes ⭐⭐</li>
-        <li>Upgrade Rumah</li>
-        <li>Naikkan Energy Awal</li>
-        </ul>
-        </div>
-        `;
+let bestKoran=null;
+let bestHistory=null;
+
+for(let k=4;k<=10;k++){
+    let result = simulate(k,startEnergy);
+    if(result.work1 && result.work2){
+        bestKoran=k;
+        bestHistory=result.energyHistory;
+        break;
     }
 }
 
+let output="";
+
+if(bestKoran===null){
+    output="<span class='danger'>Tidak stabil bahkan dengan 10 koran ❌</span>";
+    document.getElementById("output").innerHTML=output;
+    return;
+}
+
+let totalCost = 5 + 12 + (bestKoran*0.8);
+let profit = income - totalCost;
+
+output+="<b>Koran Optimal:</b> "+bestKoran+"<br>";
+output+="Total Biaya: "+totalCost.toFixed(2)+"<br>";
+output+="Profit: <b>"+profit.toFixed(2)+"</b><br><br>";
+
+let half=Math.floor(bestKoran/2);
+let second=bestKoran-half;
+
+output+="Rekomendasi Pembagian:<br>";
+output+="Sebelum Work 1 (08:00): "+half+" koran<br>";
+output+="Sebelum Work 2 (20:00): "+second+" koran<br><br>";
+output+="<span class='safe'>Stabil 2x Work ✅</span>";
+
+document.getElementById("output").innerHTML=output;
+
+drawChart(bestHistory);
+}
+
+function drawChart(data){
+let canvas=document.getElementById("chart");
+let ctx=canvas.getContext("2d");
+
+canvas.width = canvas.offsetWidth;
+canvas.height = 300;
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+let maxEnergy = Math.max(...data);
+let scale = (canvas.height-20)/maxEnergy;
+
+ctx.beginPath();
+ctx.moveTo(0,canvas.height-data[0]*scale);
+
+for(let i=1;i<data.length;i++){
+    ctx.lineTo(i*(canvas.width/24),canvas.height-data[i]*scale);
+}
+
+ctx.stroke();
+
+// garis batas 35
+ctx.beginPath();
+ctx.moveTo(0,canvas.height-35*scale);
+ctx.lineTo(canvas.width,canvas.height-35*scale);
+ctx.strokeStyle="red";
+ctx.stroke();
+ctx.strokeStyle="black";
+}
 </script>
 
 </body>
