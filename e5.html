@@ -1,219 +1,124 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Energy Optimizer PRO</title>
+<title>Simulasi Energy MPL</title>
 
 <style>
 body{
-    font-family:Arial, sans-serif;
-    background:#0f172a;
-    color:white;
-    padding:15px;
-    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    padding:20px;
 }
 .container{
+    background:white;
+    padding:20px;
+    border-radius:10px;
     max-width:500px;
     margin:auto;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
-.card{
-    background:#1e293b;
-    padding:15px;
-    margin-top:15px;
-    border-radius:12px;
+h2{
+    text-align:center;
 }
-input,select,button{
-    padding:10px;
-    margin-top:8px;
+input, button{
     width:100%;
-    border-radius:8px;
-    border:none;
+    padding:10px;
+    margin-top:10px;
     font-size:16px;
 }
 button{
-    background:#22c55e;
+    background:#2c7be5;
     color:white;
-    font-weight:bold;
+    border:none;
+    cursor:pointer;
 }
 button:hover{
-    background:#16a34a;
+    background:#1a68d1;
 }
-.small{
-    font-size:13px;
-    opacity:0.8;
+.result{
+    margin-top:20px;
+    padding:15px;
+    background:#eef3ff;
+    border-radius:8px;
+}
+.safe{
+    color:green;
+    font-weight:bold;
+}
+.warning{
+    color:red;
+    font-weight:bold;
 }
 </style>
 </head>
-
 <body>
+
 <div class="container">
+<h2>Simulasi Energy Work</h2>
 
-<h2>🔥 Energy Optimizer PRO</h2>
+<label>Input Energi Saat Ini:</label>
+<input type="number" id="energyInput" placeholder="Masukkan energi sekarang">
 
-<div class="card">
+<button onclick="hitung()">Cek Status</button>
 
-<label>Energy Sekarang</label>
-<input type="number" id="energy" value="60">
-
-<label>Reset Server (WIB)</label>
-<input type="time" id="resetTime" value="00:00">
-
-<label>Rumah</label>
-<select id="house">
-<option value="0">Tidak Ada</option>
-<option value="0.50">Small House</option>
-<option value="0.83">Nice Apartment</option>
-<option value="1.46">Mansion</option>
-<option value="1.67" selected>General's Castle</option>
-</select>
-
-<label>Clothes ⭐</label>
-<input type="number" id="c1" value="3">
-
-<label>Clothes ⭐⭐</label>
-<input type="number" id="c2" value="0">
-
-<label>Work sudah dilakukan</label>
-<input type="number" id="workDone" value="0">
-
-<button onclick="optimize()">Cari Strategi</button>
-
-</div>
-
-<div id="output"></div>
-
+<div class="result" id="output"></div>
 </div>
 
 <script>
+function hitung(){
 
-function totalBonus(){
-    let house=parseFloat(document.getElementById("house").value);
-    let c1=parseInt(document.getElementById("c1").value);
-    let c2=parseInt(document.getElementById("c2").value);
-    return house+(c1*0.042)+(c2*0.125);
-}
+    const minWork = 35;
+    const targetSafe = 60;
+    const regenPerJam = 3; // asumsi rata-rata regen bersih
+    const now = new Date();
+    const currentHour = now.getHours();
 
-function getHoursUntilReset(){
+    let energy = parseFloat(document.getElementById("energyInput").value);
+    let output = document.getElementById("output");
 
-    let reset=document.getElementById("resetTime").value;
-    let now=new Date();
-
-    let resetDate=new Date();
-    let [h,m]=reset.split(":");
-    resetDate.setHours(parseInt(h));
-    resetDate.setMinutes(parseInt(m));
-    resetDate.setSeconds(0);
-
-    if(resetDate<=now){
-        resetDate.setDate(resetDate.getDate()+1);
+    if(isNaN(energy)){
+        output.innerHTML = "Masukkan energi yang valid.";
+        return;
     }
 
-    let diff=(resetDate-now)/1000/60/60;
-    return Math.floor(diff);
-}
+    let nextWorkHour;
 
-function simulate(schedule,hours){
-
-    let energy=parseFloat(document.getElementById("energy").value);
-    let totalUsed=0;
-    let cooldown=-999;
-    let bonus=totalBonus();
-    let energyTimeline=[];
-
-    for(let h=1;h<=hours;h++){
-
-        let decay=energy*((energy/5000)+0.016);
-        energy-=decay;
-        energy+=bonus;
-
-        if(energy<10){
-            energy+=1;
-        }
-
-        energyTimeline.push(energy);
-
-        if(schedule.includes(h) && h-cooldown>=4){
-            totalUsed+=energy;
-            energy-=25;
-            cooldown=h;
-        }
+    // Tentukan work berikutnya
+    if(currentHour < 8){
+        nextWorkHour = 8;
+    } else if(currentHour < 20){
+        nextWorkHour = 20;
+    } else {
+        nextWorkHour = 32; // 08 besok (24 + 8)
     }
 
-    return {totalUsed,energyTimeline};
-}
+    let hoursToWait = nextWorkHour - currentHour;
 
-function valid(schedule){
-    for(let i=1;i<schedule.length;i++){
-        if(schedule[i]-schedule[i-1]<4) return false;
+    // Hitung estimasi energi saat jam work
+    let estimatedEnergy = energy + (hoursToWait * regenPerJam);
+
+    let html = "<b>Jam sekarang:</b> " + currentHour + ":00<br>";
+    html += "<b>Work berikutnya:</b> " + (nextWorkHour % 24) + ":00<br><br>";
+
+    if(energy >= targetSafe){
+        html += "<span class='safe'>Energi aman untuk work sekarang.</span>";
     }
-    return true;
-}
-
-function optimize(){
-
-    let hours=getHoursUntilReset();
-    let workDone=parseInt(document.getElementById("workDone").value);
-    let maxWork=3-workDone;
-
-    let best=-1;
-    let bestSchedule=[];
-    let bestTimeline=[];
-
-    function combine(start,path){
-        if(path.length>maxWork) return;
-
-        if(valid(path)){
-            let sim=simulate(path,hours);
-            if(sim.totalUsed>best){
-                best=sim.totalUsed;
-                bestSchedule=[...path];
-                bestTimeline=sim.energyTimeline;
-            }
-        }
-
-        for(let i=start;i<=hours;i++){
-            path.push(i);
-            combine(i+1,path);
-            path.pop();
-        }
+    else if(estimatedEnergy >= targetSafe){
+        html += "<span class='warning'>Energi belum aman.</span><br>";
+        html += "Disarankan menunggu sekitar <b>" + hoursToWait + " jam</b> sampai jam ";
+        html += "<b>" + (nextWorkHour % 24) + ":00</b>.<br>";
+        html += "Estimasi energi saat itu: <b>" + Math.floor(estimatedEnergy) + "</b>";
+    }
+    else{
+        html += "<span class='warning'>Energi terlalu rendah.</span><br>";
+        html += "Bahkan menunggu sampai jam work berikutnya belum cukup.<br>";
+        html += "Pertimbangkan beli koran sebelum work.";
     }
 
-    combine(1,[]);
-
-    let now=new Date();
-
-    let html=`<div class="card">`;
-
-    if(best<=0){
-        html+=`Tidak ditemukan kombinasi optimal.`;
-    }else{
-
-        html+=`<h3>🎯 Strategi Terbaik (WIB)</h3>`;
-
-        bestSchedule.forEach((h,i)=>{
-            let workTime=new Date(now.getTime()+h*60*60*1000);
-            let jam=workTime.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
-            let energiSaatItu=bestTimeline[h-1].toFixed(2);
-
-            html+=`
-            <b>${i<2?"Work":"OT"} pukul ${jam} WIB</b><br>
-            <span class="small">
-            Energi diperkirakan sekitar ${energiSaatItu}. 
-            Ini waktu optimal karena energi lebih tinggi sebelum decay berikutnya.
-            </span><br><br>
-            `;
-        });
-
-        html+=`<hr>Total Energy Maksimal: <b>${best.toFixed(2)}</b>`;
-        html+=`<br><span class="small">Sisa waktu server: ${hours} jam</span>`;
-    }
-
-    html+=`</div>`;
-
-    document.getElementById("output").innerHTML=html;
+    output.innerHTML = html;
 }
-
 </script>
 
 </body>
