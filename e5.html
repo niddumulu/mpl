@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulator Work Dual Strategy</title>
+<title>Simulator Peak Energy Strategy</title>
 
 <style>
 body{
@@ -13,7 +13,7 @@ body{
 }
 .container{
     background:white;
-    max-width:950px;
+    max-width:900px;
     margin:auto;
     padding:20px;
     border-radius:10px;
@@ -43,13 +43,20 @@ button{
 <body>
 
 <div class="container">
-<h2>🔥 Simulator Work – OT Tidak Wajib</h2>
+<h2>🔥 Peak Energy Work Strategy</h2>
 
 <label>Energy Awal</label>
 <input type="number" id="energyAwal" value="70" min="0" max="100">
 
 <label>Waktu Sekarang (WIB)</label>
 <input type="time" id="wibTime" value="14:00">
+
+<label>Sudah Work Berapa Kali?</label>
+<select id="workDone">
+<option value="0">0</option>
+<option value="1">1</option>
+<option value="2">2</option>
+</select>
 
 <label>Rumah</label>
 <select id="house">
@@ -89,104 +96,99 @@ function wibToServerMinutes(){
     return total;
 }
 
-function simulasi(sisaJam, jumlahAksi){
+function simulateEnergy(sisaJam){
 
     let energy=parseFloat(document.getElementById("energyAwal").value);
     let bonus=bonusPerJam();
-    let bestFinal=0;
-    let bestDetail=null;
+    let energies=[];
 
-    function run(times){
-        let e=energy;
-        let last=-10;
-        let detail=[];
+    for(let i=1;i<=sisaJam;i++){
 
-        for(let i=1;i<=sisaJam;i++){
+        let decay=energy*((energy/5000)+0.016);
+        energy-=decay;
+        energy+=bonus;
 
-            let decay=e*((e/5000)+0.016);
-            e-=decay;
-            e+=bonus;
+        if(energy>100) energy=100;
+        if(energy<0) energy=0;
 
-            if(e>100) e=100;
-            if(e<0) e=0;
-
-            if(times.includes(i)){
-
-                if(i<last+4) return null;
-                if(e<70) return null;
-
-                detail.push({hour:i,energy:e.toFixed(2)});
-                e*=0.75;
-                last=i;
-            }
-        }
-
-        return {final:e,detail};
+        energies.push({
+            hour:i,
+            energy:parseFloat(energy.toFixed(2))
+        });
     }
 
-    for(let w1=1;w1<=sisaJam;w1++){
-    for(let w2=w1+4;w2<=sisaJam;w2++){
+    return energies;
+}
 
-        if(jumlahAksi===2){
+function findPeaks(data, cooldown){
 
-            let r=run([w1,w2]);
-            if(r && r.detail.length===2){
-                if(r.final>bestFinal){
-                    bestFinal=r.final;
-                    bestDetail=r.detail;
-                }
-            }
+    let peaks=[];
+    let last=-10;
 
-        } else {
+    for(let i=0;i<data.length;i++){
 
-            for(let w3=w2+4;w3<=sisaJam;w3++){
+        if(data[i].energy>=70 && data[i].hour>=last+cooldown){
 
-                let r=run([w1,w2,w3]);
-                if(r && r.detail.length===3){
-                    if(r.final>bestFinal){
-                        bestFinal=r.final;
-                        bestDetail=r.detail;
-                    }
-                }
+            let isPeak=true;
+
+            if(i>0 && data[i-1].energy>data[i].energy) isPeak=false;
+            if(i<data.length-1 && data[i+1].energy>data[i].energy) isPeak=false;
+
+            if(isPeak){
+                peaks.push(data[i]);
+                last=data[i].hour;
             }
         }
+    }
 
-    }}
-
-    return bestDetail?{final:bestFinal.toFixed(2),detail:bestDetail}:null;
+    return peaks;
 }
 
 function hitung(){
 
     let serverNow=wibToServerMinutes();
     let sisaJam=Math.floor((1440-serverNow)/60);
+    let workDone=parseInt(document.getElementById("workDone").value);
 
-    let duaWork=simulasi(sisaJam,2);
-    let tigaWork=simulasi(sisaJam,3);
+    let energyData=simulateEnergy(sisaJam);
+
+    let cooldown=4;
+    let peaks=findPeaks(energyData,cooldown);
 
     let html=`<div class="card">
-    <strong>Sisa Jam sampai Reset: ${sisaJam}</strong><hr>`;
+    <strong>Sisa Jam sampai Reset: ${sisaJam}</strong><br>`;
 
-    if(duaWork){
-        html+=`<h3>✅ Strategi 2x Work</h3>`;
-        duaWork.detail.forEach((d,i)=>{
-            html+=`Work ${i+1} jam ke-${d.hour} 
-            (Energy: ${d.energy})<br>`;
-        });
-        html+=`Energy Akhir: <strong>${duaWork.final}</strong><hr>`;
+    if(sisaJam<15){
+        html+=`⚠ Sisa waktu < 15 jam, OT tidak direkomendasikan.<hr>`;
     } else {
-        html+=`❌ Tidak ditemukan kombinasi 2x work<hr>`;
+        html+=`✔ Sisa waktu cukup panjang untuk pertimbangkan OT.<hr>`;
     }
 
-    if(tigaWork){
-        html+=`<h3>🔥 Strategi 2x Work + OT</h3>`;
-        tigaWork.detail.forEach((d,i)=>{
-            html+=`${i<2?"Work":"OT"} jam ke-${d.hour} 
-            (Energy: ${d.energy})<br>`;
-        });
-        html+=`Energy Akhir: <strong>${tigaWork.final}</strong>`;
-    } else {
-        html+=`⚠ OT tidak memungkinkan hari ini`;
+    if(workDone<2){
+
+        html+=`<h3>✅ Strategi Tanpa OT</h3>`;
+
+        for(let i=0;i<Math.min(2-workDone,peaks.length);i++){
+            html+=`Work jam ke-${peaks[i].hour} 
+            (Energy: ${peaks[i].energy})<br>`;
+        }
+
+    }
+
+    if(workDone===2 || workDone<2){
+
+        html+=`<h3>🔥 Strategi Dengan OT</h3>`;
+
+        for(let i=0;i<Math.min(3-workDone,peaks.length);i++){
+
+            if(i<2-workDone){
+                html+=`Work jam ke-${peaks[i].hour} 
+                (Energy: ${peaks[i].energy})<br>`;
+            } else {
+                html+=`OT jam ke-${peaks[i].hour} 
+                (Energy: ${peaks[i].energy})<br>`;
+            }
+        }
     }
 
     html+=`</div>`;
