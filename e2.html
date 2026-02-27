@@ -3,140 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Energy MPL</title>
+<title>MPL PRO DETAIL REPORT</title>
 
 <style>
 body{
-    font-family: Arial, sans-serif;
+    font-family:Arial;
     background:#f4f6f9;
-    padding:20px;
+    padding:15px;
 }
 .container{
-    max-width:800px;
+    max-width:1000px;
     margin:auto;
     background:white;
-    padding:20px;
+    padding:15px;
     border-radius:10px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 h2{text-align:center;}
-
-input, select, button{
+.info{
+    background:#fff3cd;
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:15px;
+    font-size:14px;
+}
+input,button{
     padding:8px;
     margin:5px 0;
     width:100%;
 }
-
 button{
     background:#2c7be5;
     color:white;
     border:none;
     cursor:pointer;
 }
-button:hover{background:#1a68d1;}
-
 .log{
-    margin-top:20px;
     background:#eef3ff;
-    padding:15px;
+    padding:10px;
     border-radius:8px;
-    max-height:400px;
+    max-height:500px;
     overflow:auto;
-    font-size:14px;
+    font-size:13px;
+    white-space:pre-line;
 }
-
 .safe{color:green;font-weight:bold;}
 .danger{color:red;font-weight:bold;}
-.warning{color:orange;font-weight:bold;}
 </style>
 </head>
 <body>
 
 <div class="container">
-<h2>Simulasi Energy 24 Jam</h2>
+<h2>MPL PRO DETAIL REPORT</h2>
 
-<label>Energi Awal:</label>
+<div class="info">
+🏰 Wajib tinggal di Castle (+40 energy/hari)<br>
+🎽 Wajib pakai 10 Baju ⭐1 (+10 energy/hari)<br>
+⚡ Minimal Work = 35 Energy<br>
+🕗 Jam Work: 08 & 20
+</div>
+
+<label>Income Harian</label>
+<input type="number" id="income" value="40">
+
+<label>Energi Awal</label>
 <input type="number" id="startEnergy" value="67">
 
-<label>Jumlah Koran (0 - 10):</label>
-<input type="number" id="newspaper" value="8" min="0" max="10">
+<label>Jumlah Koran (4 - 10)</label>
+<input type="number" id="koran" value="6">
 
-<button onclick="simulate()">Simulasikan 24 Jam</button>
+<button onclick="simulate()">Simulasi Detail</button>
 
 <div class="log" id="output"></div>
+
 </div>
 
 <script>
 function simulate(){
 
-    let energy = parseFloat(document.getElementById("startEnergy").value);
-    let koran = parseInt(document.getElementById("newspaper").value);
+let income = parseFloat(document.getElementById("income").value);
+let energy = parseFloat(document.getElementById("startEnergy").value);
+let koran = parseInt(document.getElementById("koran").value);
 
-    const minWork = 35;
-    const workCost = 25;
-    const regenPerHour = 3; 
-    const decayPerHour = 2; 
-    const castlePerHour = 40/24;
-    const bajuPerHour = 10/24;
-    const koranEnergy = koran * 2; 
+const minWork = 35;
+const workCost = 25;
 
-    let log = "";
-    let work1Done = false;
-    let work2Done = false;
+const regenPerHour = 3;
+const decayPerHour = 2;
+const castlePerHour = 40/24;
+const bajuPerHour = 10/24;
 
-    log += "<b>Simulasi Dimulai</b><br>";
-    log += "Energi Awal: " + energy + "<br><br>";
+let report = "";
+let work1=false;
+let work2=false;
 
-    for(let hour=0; hour<24; hour++){
+let half=Math.floor(koran/2);
+let second=koran-half;
 
-        // Regen dasar
-        energy += regenPerHour;
-        energy += castlePerHour;
-        energy += bajuPerHour;
+for(let hour=0; hour<24; hour++){
 
-        // Decay
-        energy -= decayPerHour;
+report += "========================\n";
+report += "Jam ke " + (hour+1) + "\n";
+report += "Energi awal jam: " + energy.toFixed(2) + "\n";
 
-        // Work 1 jam 08
-        if(hour === 8 && !work1Done){
-            energy += koranEnergy/2;
-            if(energy >= minWork){
-                energy -= workCost;
-                log += "Jam 08:00 - WORK 1 ✅ (Energi sisa: " + Math.floor(energy) + ")<br>";
-                work1Done = true;
-            } else {
-                log += "<span class='danger'>Jam 08:00 - Gagal Work (Energi kurang)</span><br>";
-            }
-        }
+energy += regenPerHour;
+report += "+ Regen: 3\n";
 
-        // Work 2 jam 20
-        if(hour === 20 && !work2Done){
-            energy += koranEnergy/2;
-            if(energy >= minWork){
-                energy -= workCost;
-                log += "Jam 20:00 - WORK 2 ✅ (Energi sisa: " + Math.floor(energy) + ")<br>";
-                work2Done = true;
-            } else {
-                log += "<span class='danger'>Jam 20:00 - Gagal Work (Energi kurang)</span><br>";
-            }
-        }
+energy += castlePerHour;
+report += "+ Castle: " + castlePerHour.toFixed(2) + "\n";
 
-        if(energy < 35){
-            log += "<span class='warning'>Jam "+hour+":00 - Warning: Energi rendah ("+Math.floor(energy)+")</span><br>";
-        }
+energy += bajuPerHour;
+report += "+ Baju: " + bajuPerHour.toFixed(2) + "\n";
 
-        energy = Math.max(0, energy);
-    }
+energy -= decayPerHour;
+report += "- Decay: 2\n";
 
-    log += "<br><b>Energi Akhir:</b> " + Math.floor(energy) + "<br>";
+if(hour===8){
+let koranEnergy = half*2;
+energy += koranEnergy;
+report += "+ Koran sebelum Work 1: " + koranEnergy + "\n";
 
-    if(work1Done && work2Done){
-        log += "<span class='safe'>Kedua Work Berhasil ✅</span>";
-    }else{
-        log += "<span class='danger'>Tidak stabil ❌ Tambah koran</span>";
-    }
+if(energy>=minWork){
+energy -= workCost;
+report += "- Work 1: 25\n";
+work1=true;
+}else{
+report += "❌ Gagal Work 1 (energi kurang)\n";
+}
+}
 
-    document.getElementById("output").innerHTML = log;
+if(hour===20){
+let koranEnergy = second*2;
+energy += koranEnergy;
+report += "+ Koran sebelum Work 2: " + koranEnergy + "\n";
+
+if(energy>=minWork){
+energy -= workCost;
+report += "- Work 2: 25\n";
+work2=true;
+}else{
+report += "❌ Gagal Work 2 (energi kurang)\n";
+}
+}
+
+energy=Math.max(0,energy);
+
+report += "Total Energi akhir jam: " + energy.toFixed(2) + "\n\n";
+}
+
+let totalCost = 5 + 12 + (koran*0.8);
+let profit = income - totalCost;
+
+report += "========================\n";
+report += "RINGKASAN\n";
+report += "Work 1: " + (work1 ? "BERHASIL" : "GAGAL") + "\n";
+report += "Work 2: " + (work2 ? "BERHASIL" : "GAGAL") + "\n";
+report += "Total Biaya: " + totalCost.toFixed(2) + "\n";
+report += "Profit: " + profit.toFixed(2) + "\n";
+
+document.getElementById("output").innerText = report;
 }
 </script>
 
