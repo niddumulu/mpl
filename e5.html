@@ -3,121 +3,228 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulasi Energy MPL</title>
+<title>MPL PRO AUTO v2</title>
 
 <style>
 body{
-    font-family: Arial, sans-serif;
+    font-family:Arial;
     background:#f4f6f9;
-    padding:20px;
+    padding:15px;
 }
 .container{
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    max-width:500px;
+    max-width:1000px;
     margin:auto;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
-h2{
-    text-align:center;
-}
-input, button{
-    width:100%;
+h2{text-align:center;}
+
+.info{
+    background:#fff3cd;
     padding:10px;
-    margin-top:10px;
-    font-size:16px;
+    border-radius:8px;
+    margin-bottom:15px;
+    font-size:14px;
 }
+
+input,button{
+    padding:8px;
+    margin:5px 0;
+    width:100%;
+}
+
 button{
     background:#2c7be5;
     color:white;
     border:none;
     cursor:pointer;
 }
-button:hover{
-    background:#1a68d1;
+
+.flex{
+    display:flex;
+    gap:20px;
+    margin-top:15px;
 }
-.result{
-    margin-top:20px;
-    padding:15px;
+
+.log{
+    flex:1;
     background:#eef3ff;
+    padding:10px;
+    border-radius:8px;
+    max-height:350px;
+    overflow:auto;
+    font-size:14px;
+}
+
+.chartBox{
+    flex:1;
+}
+
+canvas{
+    width:100%;
+    height:300px;
+    background:white;
+    border:1px solid #ccc;
     border-radius:8px;
 }
-.safe{
-    color:green;
-    font-weight:bold;
-}
-.warning{
-    color:red;
-    font-weight:bold;
+
+.safe{color:green;font-weight:bold;}
+.danger{color:red;font-weight:bold;}
+
+@media(max-width:768px){
+.flex{flex-direction:column;}
 }
 </style>
 </head>
 <body>
 
 <div class="container">
-<h2>Simulasi Energy Work</h2>
+<h2>MPL PRO AUTO OPTIMIZER</h2>
 
-<label>Input Energi Saat Ini:</label>
-<input type="number" id="energyInput" placeholder="Masukkan energi sekarang">
+<div class="info">
+<b>Setup Wajib:</b><br>
+🏰 Tinggal di Castle (5 IDR / hari → +40 energy)<br>
+🎽 Pakai 10 Baju ⭐1 (12 IDR / hari → +10 energy)<br>
+⚡ Minimal energy untuk Work = 35<br>
+🕗 Jam Work tetap: 08:00 & 20:00
+</div>
 
-<button onclick="hitung()">Cek Status</button>
+<label>Income Harian</label>
+<input type="number" id="income" value="40">
 
-<div class="result" id="output"></div>
+<label>Energi Awal</label>
+<input type="number" id="startEnergy" value="67">
+
+<button onclick="optimize()">Cari Strategi Optimal</button>
+
+<div class="flex">
+<div class="log" id="output"></div>
+<div class="chartBox">
+<canvas id="chart"></canvas>
+</div>
+</div>
 </div>
 
 <script>
-function hitung(){
+function simulate(koran, startEnergy){
 
-    const minWork = 35;
-    const targetSafe = 60;
-    const regenPerJam = 3; // asumsi rata-rata regen bersih
-    const now = new Date();
-    const currentHour = now.getHours();
+let energy = startEnergy;
 
-    let energy = parseFloat(document.getElementById("energyInput").value);
-    let output = document.getElementById("output");
+const minWork = 35;
+const workCost = 25;
 
-    if(isNaN(energy)){
-        output.innerHTML = "Masukkan energi yang valid.";
-        return;
+const regenPerHour = 3;
+const decayPerHour = 2;
+const castlePerHour = 40/24;
+const bajuPerHour = 10/24;
+
+let work1=false;
+let work2=false;
+let energyHistory=[];
+
+for(let hour=0; hour<24; hour++){
+
+    energy += regenPerHour + castlePerHour + bajuPerHour;
+    energy -= decayPerHour;
+
+    if(hour===8){
+        energy += (koran*2)/2;
+        if(energy>=minWork){
+            energy -= workCost;
+            work1=true;
+        }
     }
 
-    let nextWorkHour;
-
-    // Tentukan work berikutnya
-    if(currentHour < 8){
-        nextWorkHour = 8;
-    } else if(currentHour < 20){
-        nextWorkHour = 20;
-    } else {
-        nextWorkHour = 32; // 08 besok (24 + 8)
+    if(hour===20){
+        energy += (koran*2)/2;
+        if(energy>=minWork){
+            energy -= workCost;
+            work2=true;
+        }
     }
 
-    let hoursToWait = nextWorkHour - currentHour;
+    energy=Math.max(0,energy);
+    energyHistory.push(energy);
+}
 
-    // Hitung estimasi energi saat jam work
-    let estimatedEnergy = energy + (hoursToWait * regenPerJam);
+return {work1,work2,energyHistory};
+}
 
-    let html = "<b>Jam sekarang:</b> " + currentHour + ":00<br>";
-    html += "<b>Work berikutnya:</b> " + (nextWorkHour % 24) + ":00<br><br>";
+function optimize(){
 
-    if(energy >= targetSafe){
-        html += "<span class='safe'>Energi aman untuk work sekarang.</span>";
+let income = parseFloat(document.getElementById("income").value);
+let startEnergy = parseFloat(document.getElementById("startEnergy").value);
+
+let bestKoran=null;
+let bestHistory=null;
+
+for(let k=4;k<=10;k++){
+    let result = simulate(k,startEnergy);
+    if(result.work1 && result.work2){
+        bestKoran=k;
+        bestHistory=result.energyHistory;
+        break;
     }
-    else if(estimatedEnergy >= targetSafe){
-        html += "<span class='warning'>Energi belum aman.</span><br>";
-        html += "Disarankan menunggu sekitar <b>" + hoursToWait + " jam</b> sampai jam ";
-        html += "<b>" + (nextWorkHour % 24) + ":00</b>.<br>";
-        html += "Estimasi energi saat itu: <b>" + Math.floor(estimatedEnergy) + "</b>";
-    }
-    else{
-        html += "<span class='warning'>Energi terlalu rendah.</span><br>";
-        html += "Bahkan menunggu sampai jam work berikutnya belum cukup.<br>";
-        html += "Pertimbangkan beli koran sebelum work.";
-    }
+}
 
-    output.innerHTML = html;
+let output="";
+
+if(bestKoran===null){
+    output="<span class='danger'>Tidak stabil bahkan dengan 10 koran ❌</span>";
+    document.getElementById("output").innerHTML=output;
+    return;
+}
+
+let totalCost = 5 + 12 + (bestKoran*0.8);
+let profit = income - totalCost;
+
+output+="<b>Koran Optimal:</b> "+bestKoran+"<br>";
+output+="Total Biaya: "+totalCost.toFixed(2)+"<br>";
+output+="Profit: <b>"+profit.toFixed(2)+"</b><br><br>";
+
+let half=Math.floor(bestKoran/2);
+let second=bestKoran-half;
+
+output+="Rekomendasi Pembagian:<br>";
+output+="Sebelum Work 1 (08:00): "+half+" koran<br>";
+output+="Sebelum Work 2 (20:00): "+second+" koran<br><br>";
+output+="<span class='safe'>Stabil 2x Work ✅</span>";
+
+document.getElementById("output").innerHTML=output;
+
+drawChart(bestHistory);
+}
+
+function drawChart(data){
+let canvas=document.getElementById("chart");
+let ctx=canvas.getContext("2d");
+
+canvas.width = canvas.offsetWidth;
+canvas.height = 300;
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+let maxEnergy = Math.max(...data);
+let scale = (canvas.height-20)/maxEnergy;
+
+ctx.beginPath();
+ctx.moveTo(0,canvas.height-data[0]*scale);
+
+for(let i=1;i<data.length;i++){
+    ctx.lineTo(i*(canvas.width/24),canvas.height-data[i]*scale);
+}
+
+ctx.stroke();
+
+// garis batas 35
+ctx.beginPath();
+ctx.moveTo(0,canvas.height-35*scale);
+ctx.lineTo(canvas.width,canvas.height-35*scale);
+ctx.strokeStyle="red";
+ctx.stroke();
+ctx.strokeStyle="black";
 }
 </script>
 
