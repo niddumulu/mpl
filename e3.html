@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MPL PRO Dashboard</title>
+<title>MPL PRO Dashboard FIX</title>
 
 <style>
 body{
     font-family:Arial;
     background:#f4f6f9;
-    padding:20px;
+    padding:15px;
 }
 .container{
     max-width:1000px;
     margin:auto;
     background:white;
-    padding:20px;
+    padding:15px;
     border-radius:10px;
     box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
@@ -33,54 +33,69 @@ button{
     border:none;
     cursor:pointer;
 }
-button:hover{background:#1a68d1;}
 
-.grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
+.flex{
+    display:flex;
     gap:20px;
+    margin-top:15px;
 }
 
 .log{
+    flex:1;
     background:#eef3ff;
-    padding:15px;
+    padding:10px;
     border-radius:8px;
-    max-height:350px;
+    max-height:300px;
     overflow:auto;
     font-size:14px;
+}
+
+.chartBox{
+    flex:1;
+}
+
+canvas{
+    width:100%;
+    height:300px;
+    background:white;
+    border:1px solid #ccc;
+    border-radius:8px;
 }
 
 .safe{color:green;font-weight:bold;}
 .danger{color:red;font-weight:bold;}
 .warning{color:orange;font-weight:bold;}
 
-canvas{
-    background:#fff;
-    border:1px solid #ccc;
-    border-radius:8px;
+@media(max-width:768px){
+    .flex{
+        flex-direction:column;
+    }
 }
 </style>
 </head>
 <body>
 
 <div class="container">
-<h2>MPL PRO Energy & Profit Simulator</h2>
+<h2>MPL PRO Energy Simulator</h2>
 
-<label>Income Harian (IDR)</label>
+<label>Income Harian</label>
 <input type="number" id="income" value="40">
 
 <label>Energi Awal</label>
 <input type="number" id="startEnergy" value="67">
 
 <label>Jumlah Koran (0-10)</label>
-<input type="number" id="koran" value="8" min="0" max="10">
+<input type="number" id="koran" value="8">
 
-<button onclick="simulate()">Simulasi PRO</button>
+<button onclick="simulate()">Simulasi</button>
 
-<div class="grid">
+<div class="flex">
 <div class="log" id="output"></div>
-<canvas id="chart" width="450" height="350"></canvas>
+<div class="chartBox">
+<canvas id="chart"></canvas>
 </div>
+</div>
+
 </div>
 
 <script>
@@ -102,11 +117,10 @@ const decayPerHour = 2;
 const castlePerHour = 40/24;
 const bajuPerHour = 10/24;
 
-let work1=false;
-let work2=false;
-
 let log="";
 let energyHistory=[];
+let work1=false;
+let work2=false;
 
 for(let hour=0; hour<24; hour++){
 
@@ -119,7 +133,7 @@ for(let hour=0; hour<24; hour++){
             energy -= workCost;
             log+="08:00 WORK 1 ✅ ("+Math.floor(energy)+")<br>";
             work1=true;
-        }else{
+        } else {
             log+="<span class='danger'>08:00 GAGAL WORK</span><br>";
         }
     }
@@ -130,7 +144,7 @@ for(let hour=0; hour<24; hour++){
             energy -= workCost;
             log+="20:00 WORK 2 ✅ ("+Math.floor(energy)+")<br>";
             work2=true;
-        }else{
+        } else {
             log+="<span class='danger'>20:00 GAGAL WORK</span><br>";
         }
     }
@@ -146,52 +160,40 @@ for(let hour=0; hour<24; hour++){
 let totalCost = castleCost + bajuCost + koranCost;
 let profit = income - totalCost;
 
-log+="<hr>";
-log+="Total Biaya: "+totalCost.toFixed(2)+"<br>";
-log+="Profit: <b>"+profit.toFixed(2)+" IDR</b><br>";
+log+="<hr>Total Biaya: "+totalCost.toFixed(2);
+log+="<br>Profit: <b>"+profit.toFixed(2)+"</b><br>";
 
 if(work1 && work2){
     log+="<span class='safe'>Stabil 2x Work ✅</span>";
 }else{
-    log+="<span class='danger'>Tidak Stabil ❌ Tambah Koran</span>";
+    log+="<span class='danger'>Tidak Stabil ❌</span>";
 }
 
 document.getElementById("output").innerHTML=log;
 
 drawChart(energyHistory);
-recommend(income);
 }
 
 function drawChart(data){
 let canvas=document.getElementById("chart");
 let ctx=canvas.getContext("2d");
 
+canvas.width = canvas.offsetWidth;
+canvas.height = 300;
+
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
+let maxEnergy = Math.max(...data);
+let scale = (canvas.height-20) / maxEnergy;
+
 ctx.beginPath();
-ctx.moveTo(0,canvas.height-data[0]*3);
+ctx.moveTo(0,canvas.height-data[0]*scale);
 
 for(let i=1;i<data.length;i++){
-    ctx.lineTo(i*(canvas.width/24),canvas.height-data[i]*3);
+    ctx.lineTo(i*(canvas.width/24),canvas.height-data[i]*scale);
 }
 
 ctx.stroke();
-}
-
-function recommend(income){
-
-let rec="";
-if(income<=40){
-    rec="Rekomendasi: 8-10 koran untuk aman.";
-}
-else if(income<=50){
-    rec="Rekomendasi: 8 koran cukup stabil.";
-}
-else{
-    rec="Income bagus. Bisa eksperimen kurangi koran.";
-}
-
-document.getElementById("output").innerHTML+="<br><br><b>"+rec+"</b>";
 }
 </script>
 
