@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Energi MPL</title>
+
+<style>
+body{
+    font-family:Arial, sans-serif;
+    background:#f4f6f9;
+    padding:20px;
+}
+.container{
+    max-width:600px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+h2{
+    text-align:center;
+}
+input, button{
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    font-size:16px;
+}
+button{
+    background:#2d89ef;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+button:hover{
+    background:#1b5fbf;
+}
+.result{
+    margin-top:20px;
+    max-height:400px;
+    overflow:auto;
+    background:#fafafa;
+    padding:10px;
+    border-radius:6px;
+}
+.row{
+    padding:4px 0;
+    border-bottom:1px solid #ddd;
+    font-size:14px;
+}
+.highlight{
+    font-weight:bold;
+    color:#2d89ef;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>Simulasi Energi MyProfitLand</h2>
+
+<label>Energi Awal</label>
+<input type="number" id="startEnergy" value="66" step="0.01">
+
+<label>Konstanta Regen (K)</label>
+<input type="number" id="regenConst" value="1.9972" step="0.0001">
+
+<button onclick="simulate()">Hitung 24 Jam</button>
+
+<div class="result" id="output"></div>
+</div>
+
+<script>
+function simulate(){
+
+    let energy = parseFloat(document.getElementById("startEnergy").value);
+    let K = parseFloat(document.getElementById("regenConst").value);
+    let outputDiv = document.getElementById("output");
+
+    outputDiv.innerHTML = "";
+
+    for(let jam = 1; jam <= 24; jam++){
+
+        let prev = energy;
+
+        let reduction = energy * ((energy/5000) + 0.016);
+
+        let next = energy - reduction + K;
+
+        // pembulatan 2 digit seperti Excel
+        next = Math.round(next * 100) / 100;
+
+        let diff = (next - prev).toFixed(2);
+
+        outputDiv.innerHTML += `
+        <div class="row">
+        Jam ${jam} :
+        ${prev.toFixed(2)} → 
+        <span class="highlight">${next.toFixed(2)}</span>
+        (Δ ${diff})
+        </div>
+        `;
+
+        energy = next;
+    }
+}
+</script>
+
+</body>
+</html>
