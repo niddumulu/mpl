@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Peta Rute Kota</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+padding:20px;
+}
+
+.container{
+background:white;
+padding:20px;
+border-radius:10px;
+max-width:900px;
+margin:auto;
+}
+
+input,select,button{
+padding:8px;
+margin:5px;
+}
+
+button{
+background:#2d7ef7;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1c5ec2;
+}
+
+.box{
+background:#f7f7f7;
+padding:10px;
+border-radius:6px;
+margin-top:10px;
+}
+
+.result{
+background:#e9f3ff;
+padding:15px;
+border-radius:6px;
+margin-top:15px;
+font-size:18px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Pemetaan Rute Kota</h1>
+
+<h2>1️⃣ Tambah Kota</h2>
+
+<input id="cityName" placeholder="Nama Kota">
+<input id="countryName" placeholder="Negara">
+
+<button onclick="addCity()">Tambah Kota</button>
+
+<div class="box" id="cityList"></div>
+
+
+<h2>2️⃣ Tambah Jarak Antar Kota</h2>
+
+<select id="cityA"></select>
+<select id="cityB"></select>
+
+<input id="distance" type="number" placeholder="Jarak km">
+
+<button onclick="addRoute()">Tambah Rute</button>
+
+<div class="box" id="routeList"></div>
+
+
+<h2>3️⃣ Cari Rute Tercepat</h2>
+
+<select id="startCity"></select>
+<select id="endCity"></select>
+
+<button onclick="findRoute()">Hitung Rute</button>
+
+<div class="result" id="result"></div>
+
+</div>
+
+<script>
+
+let cities={}
+let graph={}
+
+function saveData(){
+
+localStorage.setItem("cities",JSON.stringify(cities))
+localStorage.setItem("graph",JSON.stringify(graph))
+
+}
+
+function loadData(){
+
+let c=localStorage.getItem("cities")
+let g=localStorage.getItem("graph")
+
+if(c) cities=JSON.parse(c)
+if(g) graph=JSON.parse(g)
+
+updateLists()
+updateDropdowns()
+
+}
+
+function addCity(){
+
+let city=document.getElementById("cityName").value
+let country=document.getElementById("countryName").value
+
+if(!city)return
+
+cities[city]=country
+
+if(!graph[city])graph[city]={}
+
+saveData()
+updateLists()
+updateDropdowns()
+
+}
+
+function addRoute(){
+
+let a=document.getElementById("cityA").value
+let b=document.getElementById("cityB").value
+let d=parseFloat(document.getElementById("distance").value)
+
+if(!graph[a])graph[a]={}
+if(!graph[b])graph[b]={}
+
+graph[a][b]=d
+graph[b][a]=d
+
+saveData()
+updateLists()
+
+}
+
+function updateDropdowns(){
+
+let selects=["cityA","cityB","startCity","endCity"]
+
+selects.forEach(id=>{
+
+let s=document.getElementById(id)
+
+s.innerHTML=""
+
+for(let c in cities){
+
+let opt=document.createElement("option")
+
+opt.value=c
+opt.text=c
+
+s.appendChild(opt)
+
+}
+
+})
+
+}
+
+function updateLists(){
+
+let cityHTML="<b>Daftar Kota:</b><br>"
+
+for(let c in cities){
+
+cityHTML+=c+" ("+cities[c]+")<br>"
+
+}
+
+document.getElementById("cityList").innerHTML=cityHTML
+
+
+let routeHTML="<b>Daftar Rute:</b><br>"
+
+for(let a in graph){
+
+for(let b in graph[a]){
+
+routeHTML+=a+" → "+b+" : "+graph[a][b]+" km<br>"
+
+}
+
+}
+
+document.getElementById("routeList").innerHTML=routeHTML
+
+}
+
+function findRoute(){
+
+let start=document.getElementById("startCity").value
+let end=document.getElementById("endCity").value
+
+let dist={}
+let prev={}
+let visited=new Set()
+
+for(let c in graph){
+
+dist[c]=Infinity
+prev[c]=null
+
+}
+
+dist[start]=0
+
+while(true){
+
+let closest=null
+
+for(let c in dist){
+
+if(!visited.has(c)){
+
+if(closest===null||dist[c]<dist[closest]){
+
+closest=c
+
+}
+
+}
+
+}
+
+if(closest===null)break
+if(closest===end)break
+
+visited.add(closest)
+
+for(let n in graph[closest]){
+
+let newDist=dist[closest]+graph[closest][n]
+
+if(newDist<dist[n]){
+
+dist[n]=newDist
+prev[n]=closest
+
+}
+
+}
+
+}
+
+let path=[]
+let cur=end
+
+while(cur){
+
+path.unshift(cur)
+cur=prev[cur]
+
+}
+
+document.getElementById("result").innerHTML=
+"<b>Rute:</b> "+path.join(" → ")+"<br><b>Total Jarak:</b> "+dist[end]+" km"
+
+}
+
+loadData()
+
+</script>
+
+</body>
+</html>
