@@ -72,7 +72,6 @@ margin-top:15px;
 
 <div class="box" id="cityList"></div>
 
-
 <h2>Tambah Travel Antar Negara</h2>
 
 <select id="cityA"></select>
@@ -83,7 +82,6 @@ margin-top:15px;
 <button onclick="addRoute()">Tambah Travel</button>
 
 <div class="box" id="routeList"></div>
-
 
 <h2>Cari Rute</h2>
 
@@ -102,10 +100,8 @@ let cities={}
 let graph={}
 
 function saveData(){
-
 localStorage.setItem("cities",JSON.stringify(cities))
 localStorage.setItem("graph",JSON.stringify(graph))
-
 }
 
 function loadData(){
@@ -190,15 +186,12 @@ function updateLists(){
 let cityHTML="<b>Kota:</b><br>"
 
 for(let c in cities){
-
 cityHTML+=c+" ("+cities[c]+")<br>"
-
 }
 
 document.getElementById("cityList").innerHTML=cityHTML
 
 let routeHTML="<b>Travel Routes:</b><br>"
-
 let shown=new Set()
 
 for(let a in graph){
@@ -208,10 +201,8 @@ for(let b in graph[a]){
 let key=[a,b].sort().join("-")
 
 if(!shown.has(key)){
-
 routeHTML+=a+" ⇄ "+b+" : "+graph[a][b]+" km<br>"
 shown.add(key)
-
 }
 
 }
@@ -226,7 +217,7 @@ function getNeighbors(city,userCountry){
 
 let list=[]
 
-/* ANGKOT ke semua kota dalam negara user */
+/* ANGKOT antar semua kota negara user */
 
 if(cities[city]===userCountry){
 
@@ -236,7 +227,7 @@ if(c!==city && cities[c]===userCountry){
 
 list.push({
 city:c,
-cost:0.5,
+cost:0,
 type:"angkot"
 })
 
@@ -282,10 +273,8 @@ let prevType={}
 let visited=new Set()
 
 for(let c in cities){
-
 dist[c]=Infinity
 prev[c]=null
-
 }
 
 dist[start]=0
