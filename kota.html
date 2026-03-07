@@ -2,18 +2,16 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Peta Rute Kota</title>
+<title>Rute Kota MPL</title>
 
 <style>
 
 body{
 font-family:Arial;
 background:#f2f2f2;
-padding:10px;
 margin:0;
+padding:10px;
 }
 
 .container{
@@ -22,15 +20,6 @@ padding:15px;
 border-radius:10px;
 max-width:900px;
 margin:auto;
-}
-
-h1{
-font-size:22px;
-}
-
-h2{
-font-size:18px;
-margin-top:25px;
 }
 
 input,select,button{
@@ -46,11 +35,6 @@ background:#2d7ef7;
 color:white;
 border:none;
 border-radius:8px;
-cursor:pointer;
-}
-
-button:hover{
-background:#1c5ec2;
 }
 
 .box{
@@ -60,7 +44,6 @@ border-radius:6px;
 margin-top:10px;
 max-height:150px;
 overflow:auto;
-font-size:14px;
 }
 
 .result{
@@ -68,17 +51,6 @@ background:#e9f3ff;
 padding:15px;
 border-radius:6px;
 margin-top:15px;
-font-size:16px;
-word-wrap:break-word;
-}
-
-@media(min-width:700px){
-
-input,select,button{
-width:auto;
-min-width:200px;
-}
-
 }
 
 </style>
@@ -88,9 +60,7 @@ min-width:200px;
 
 <div class="container">
 
-<h1>Pemetaan Rute Kota</h1>
-
-<h2>1️⃣ Tambah Kota</h2>
+<h2>Tambah Kota</h2>
 
 <input id="cityName" placeholder="Nama Kota">
 <input id="countryName" placeholder="Negara">
@@ -100,7 +70,7 @@ min-width:200px;
 <div class="box" id="cityList"></div>
 
 
-<h2>2️⃣ Tambah Jarak Antar Kota</h2>
+<h2>Tambah Jarak Antar Kota (antar negara)</h2>
 
 <select id="cityA"></select>
 <select id="cityB"></select>
@@ -112,12 +82,12 @@ min-width:200px;
 <div class="box" id="routeList"></div>
 
 
-<h2>3️⃣ Cari Rute Tercepat</h2>
+<h2>Cari Rute</h2>
 
 <select id="startCity"></select>
 <select id="endCity"></select>
 
-<button onclick="findRoute()">Hitung Rute</button>
+<button onclick="findRoute()">Hitung</button>
 
 <div class="result" id="result"></div>
 
@@ -128,9 +98,13 @@ min-width:200px;
 let cities={}
 let graph={}
 
+const ANGKOT_TIME=30
+
 function saveData(){
+
 localStorage.setItem("cities",JSON.stringify(cities))
 localStorage.setItem("graph",JSON.stringify(graph))
+
 }
 
 function loadData(){
@@ -141,8 +115,8 @@ let g=localStorage.getItem("graph")
 if(c) cities=JSON.parse(c)
 if(g) graph=JSON.parse(g)
 
-updateLists()
 updateDropdowns()
+updateLists()
 
 }
 
@@ -158,11 +132,9 @@ cities[city]=country
 if(!graph[city])graph[city]={}
 
 saveData()
-updateLists()
-updateDropdowns()
 
-document.getElementById("cityName").value=""
-document.getElementById("countryName").value=""
+updateDropdowns()
+updateLists()
 
 }
 
@@ -179,9 +151,8 @@ graph[a][b]=d
 graph[b][a]=d
 
 saveData()
-updateLists()
 
-document.getElementById("distance").value=""
+updateLists()
 
 }
 
@@ -192,7 +163,6 @@ let selects=["cityA","cityB","startCity","endCity"]
 selects.forEach(id=>{
 
 let s=document.getElementById(id)
-
 s.innerHTML=""
 
 for(let c in cities){
@@ -211,7 +181,7 @@ s.appendChild(opt)
 
 function updateLists(){
 
-let cityHTML="<b>Daftar Kota:</b><br>"
+let cityHTML="<b>Kota:</b><br>"
 
 for(let c in cities){
 cityHTML+=c+" ("+cities[c]+")<br>"
@@ -220,15 +190,47 @@ cityHTML+=c+" ("+cities[c]+")<br>"
 document.getElementById("cityList").innerHTML=cityHTML
 
 
-let routeHTML="<b>Daftar Rute:</b><br>"
+let routeHTML="<b>Rute Antar Negara:</b><br>"
 
 for(let a in graph){
+
 for(let b in graph[a]){
+
 routeHTML+=a+" → "+b+" : "+graph[a][b]+" km<br>"
+
 }
+
 }
 
 document.getElementById("routeList").innerHTML=routeHTML
+
+}
+
+function getNeighbors(city){
+
+let neighbors={}
+
+for(let c in cities){
+
+if(c!==city && cities[c]===cities[city]){
+
+neighbors[c]=ANGKOT_TIME
+
+}
+
+}
+
+if(graph[city]){
+
+for(let n in graph[city]){
+
+neighbors[n]=graph[city][n]
+
+}
+
+}
+
+return neighbors
 
 }
 
@@ -241,9 +243,11 @@ let dist={}
 let prev={}
 let visited=new Set()
 
-for(let c in graph){
+for(let c in cities){
+
 dist[c]=Infinity
 prev[c]=null
+
 }
 
 dist[start]=0
@@ -255,9 +259,11 @@ let closest=null
 for(let c in dist){
 
 if(!visited.has(c)){
+
 if(closest===null||dist[c]<dist[closest]){
 closest=c
 }
+
 }
 
 }
@@ -267,13 +273,19 @@ if(closest===end)break
 
 visited.add(closest)
 
-for(let n in graph[closest]){
+let neighbors=getNeighbors(closest)
 
-let newDist=dist[closest]+graph[closest][n]
+for(let n in neighbors){
+
+let cost=neighbors[n]
+
+let newDist=dist[closest]+cost
 
 if(newDist<dist[n]){
+
 dist[n]=newDist
 prev[n]=closest
+
 }
 
 }
@@ -284,12 +296,17 @@ let path=[]
 let cur=end
 
 while(cur){
+
 path.unshift(cur)
 cur=prev[cur]
+
 }
 
-document.getElementById("result").innerHTML=
-"<b>Rute:</b> "+path.join(" → ")+"<br><b>Total Jarak:</b> "+dist[end]+" km"
+let html="<b>Rute:</b><br>"+path.join(" → ")
+
+html+="<br><br><b>Total waktu/jarak:</b> "+dist[end]
+
+document.getElementById("result").innerHTML=html
 
 }
 
