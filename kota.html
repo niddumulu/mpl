@@ -72,7 +72,6 @@ margin-top:15px;
 
 <div class="box" id="cityList"></div>
 
-
 <h2>Tambah Rute Antar Kota</h2>
 
 <select id="cityA"></select>
@@ -83,7 +82,6 @@ margin-top:15px;
 <button onclick="addRoute()">Tambah Rute</button>
 
 <div class="box" id="routeList"></div>
-
 
 <h2>Cari Rute</h2>
 
@@ -227,25 +225,37 @@ function getNeighbors(city,userCountry){
 
 let list=[]
 
+if(cities[city]===userCountry){
+
+for(let c in cities){
+
+if(c!==city && cities[c]===userCountry){
+
+list.push({
+city:c,
+cost:0.5,
+type:"angkot"
+})
+
+}
+
+}
+
+}
+
 if(graph[city]){
 
 for(let n in graph[city]){
 
-let cost=graph[city][n]
-let type="travel"
-
-if(cities[city]===userCountry && cities[n]===userCountry){
-
-cost=0.5
-type="angkot"
-
-}
+if(cities[city]!==cities[n]){
 
 list.push({
 city:n,
-cost:cost,
-type:type
+cost:graph[city][n],
+type:"travel"
 })
+
+}
 
 }
 
@@ -335,14 +345,29 @@ for(let i=0;i<path.length;i++){
 html+=path[i]
 
 if(i<types.length){
-
 html+=" → ("+types[i]+") → "
-
 }
 
 }
 
-html+="<br><br><b>Total Cost:</b> "+dist[end]
+let totalKm=0
+
+for(let i=0;i<types.length;i++){
+
+if(types[i]==="travel"){
+
+let a=path[i]
+let b=path[i+1]
+
+if(graph[a] && graph[a][b]){
+totalKm+=graph[a][b]
+}
+
+}
+
+}
+
+html+="<br><br><b>Total Travel KM:</b> "+totalKm
 
 document.getElementById("result").innerHTML=html
 
