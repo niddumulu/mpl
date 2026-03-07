@@ -1,383 +1,255 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>MPL Route Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Route Finder MPL</title>
 
 <style>
 
 body{
 font-family:Arial;
-background:#f4f4f4;
+background:#f2f2f2;
 margin:0;
 padding:10px;
 }
 
 .container{
-max-width:900px;
-margin:auto;
 background:white;
 padding:15px;
 border-radius:10px;
+max-width:900px;
+margin:auto;
 }
 
-input,select,textarea,button{
+input,select,button{
 width:100%;
-padding:8px;
-margin-top:5px;
-margin-bottom:10px;
-border-radius:6px;
-border:1px solid #ccc;
+padding:12px;
+margin-top:8px;
+font-size:16px;
+box-sizing:border-box;
 }
 
 button{
-background:#2c7be5;
+background:#2d7ef7;
 color:white;
 border:none;
+border-radius:8px;
 }
 
-table{
-width:100%;
-border-collapse:collapse;
+.box{
+background:#f7f7f7;
+padding:10px;
+border-radius:6px;
 margin-top:10px;
-}
-
-td,th{
-border:1px solid #ddd;
-padding:6px;
-font-size:14px;
-}
-
-.row{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-}
-
-.row div{
-flex:1;
+max-height:150px;
+overflow:auto;
 }
 
 .result{
-background:#eef7ff;
-padding:10px;
+background:#e9f3ff;
+padding:15px;
 border-radius:6px;
+margin-top:15px;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <div class="container">
 
-<h2>User</h2>
-<input id="userNation" placeholder="Kewarganegaraan user">
-
-<h2>Import Kota</h2>
-<textarea id="bulkCities" rows="5" placeholder="Jakarta,Indonesia"></textarea>
-<button onclick="importCities()">Import Kota</button>
+<h2>Negara User</h2>
+<input id="homeCountry" placeholder="Contoh: Indonesia">
 
 <h2>Tambah Kota</h2>
 
-<div class="row">
-<div>
-<input id="cityName" placeholder="Nama kota">
-</div>
+<input id="cityName" placeholder="Nama Kota">
+<input id="countryName" placeholder="Negara Kota">
 
-<div>
-<input id="cityCountry" placeholder="Negara">
-</div>
-</div>
+<button onclick="addCity()">Tambah Kota</button>
 
-<button onclick="addCity()">Tambah</button>
+<div class="box" id="cityList"></div>
 
-<h2>Daftar Kota</h2>
 
-<table id="cityTable">
+<h2>Tambah Rute Antar Kota</h2>
 
-<thead>
-<tr>
-<th>Kota</th>
-<th>Negara</th>
-<th>Hapus</th>
-</tr>
-</thead>
-
-<tbody></tbody>
-
-</table>
-
-<h2>Tambah Jarak</h2>
-
-<div class="row">
-
-<div>
 <select id="cityA"></select>
-</div>
-
-<div>
 <select id="cityB"></select>
-</div>
 
-<div>
-<input id="distanceKM" type="number" placeholder="KM">
-</div>
+<input id="distance" type="number" placeholder="Jarak km">
 
-</div>
+<button onclick="addRoute()">Tambah Rute</button>
 
-<button onclick="addDistance()">Tambah Jarak</button>
+<div class="box" id="routeList"></div>
 
-<h2>Daftar Jarak</h2>
-
-<table id="distanceTable">
-
-<thead>
-<tr>
-<th>Kota A</th>
-<th>Kota B</th>
-<th>KM</th>
-<th>Hapus</th>
-</tr>
-</thead>
-
-<tbody></tbody>
-
-</table>
 
 <h2>Cari Rute</h2>
 
-<div class="row">
-
-<div>
 <select id="startCity"></select>
-</div>
+<select id="endCity"></select>
 
-<div>
-<select id="targetCity"></select>
-</div>
+<button onclick="findRoute()">Cari</button>
 
-</div>
-
-<button onclick="findRoute()">Cari Rute</button>
-
-<div id="routeResult" class="result"></div>
+<div class="result" id="result"></div>
 
 </div>
 
 <script>
 
-let cities=JSON.parse(localStorage.getItem("cities")||"[]")
-let distances=JSON.parse(localStorage.getItem("distances")||"[]")
+let cities={}
+let graph={}
 
-function save(){
+function saveData(){
+
 localStorage.setItem("cities",JSON.stringify(cities))
-localStorage.setItem("distances",JSON.stringify(distances))
-}
-
-function refreshDropdown(){
-
-let ids=["cityA","cityB","startCity","targetCity"]
-
-ids.forEach(id=>{
-
-let select=document.getElementById(id)
-
-select.innerHTML=""
-
-cities.forEach((c,i)=>{
-
-let opt=document.createElement("option")
-opt.value=i
-opt.textContent=c.name+" ("+c.country+")"
-
-select.appendChild(opt)
-
-})
-
-})
+localStorage.setItem("graph",JSON.stringify(graph))
 
 }
 
-function renderCities(){
+function loadData(){
 
-let tbody=document.querySelector("#cityTable tbody")
-tbody.innerHTML=""
+let c=localStorage.getItem("cities")
+let g=localStorage.getItem("graph")
 
-cities.forEach((c,i)=>{
+if(c) cities=JSON.parse(c)
+if(g) graph=JSON.parse(g)
 
-let tr=document.createElement("tr")
-
-tr.innerHTML=
-"<td>"+c.name+"</td>"+
-"<td>"+c.country+"</td>"+
-"<td><button onclick='deleteCity("+i+")'>X</button></td>"
-
-tbody.appendChild(tr)
-
-})
-
-refreshDropdown()
-save()
+updateDropdowns()
+updateLists()
 
 }
 
 function addCity(){
 
-let name=document.getElementById("cityName").value.trim()
-let country=document.getElementById("cityCountry").value.trim()
+let city=document.getElementById("cityName").value.trim()
+let country=document.getElementById("countryName").value.trim()
 
-if(!name||!country)return
+if(!city || !country)return
 
-cities.push({name,country})
+cities[city]=country
+
+if(!graph[city])graph[city]={}
 
 document.getElementById("cityName").value=""
-document.getElementById("cityCountry").value=""
+document.getElementById("countryName").value=""
 
-renderCities()
-
-}
-
-function deleteCity(i){
-
-cities.splice(i,1)
-renderCities()
+saveData()
+updateDropdowns()
+updateLists()
 
 }
 
-function importCities(){
+function addRoute(){
 
-let text=document.getElementById("bulkCities").value.trim()
+let a=document.getElementById("cityA").value
+let b=document.getElementById("cityB").value
+let d=parseFloat(document.getElementById("distance").value)
 
-if(!text)return
+if(!a || !b || isNaN(d))return
 
-let lines=text.split("\n")
+if(!graph[a])graph[a]={}
+if(!graph[b])graph[b]={}
 
-lines.forEach(line=>{
+graph[a][b]=d
+graph[b][a]=d
 
-line=line.trim()
+document.getElementById("distance").value=""
 
-if(!line)return
+saveData()
+updateLists()
 
-let parts
+}
 
-if(line.includes(",")) parts=line.split(",")
-else if(line.includes("|")) parts=line.split("|")
-else if(line.includes("-")) parts=line.split("-")
-else parts=line.split(" ")
+function updateDropdowns(){
 
-if(parts.length>=2){
+let selects=["cityA","cityB","startCity","endCity"]
 
-let city=parts[0].trim()
-let country=parts[1].trim()
+selects.forEach(id=>{
 
-cities.push({
-name:city,
-country:country
+let s=document.getElementById(id)
+s.innerHTML=""
+
+for(let c in cities){
+
+let opt=document.createElement("option")
+opt.value=c
+opt.text=c+" ("+cities[c]+")"
+
+s.appendChild(opt)
+
+}
+
 })
 
 }
 
-})
+function updateLists(){
 
-document.getElementById("bulkCities").value=""
+let cityHTML="<b>Kota:</b><br>"
 
-renderCities()
+for(let c in cities){
 
-}
-
-function renderDistances(){
-
-let tbody=document.querySelector("#distanceTable tbody")
-
-tbody.innerHTML=""
-
-distances.forEach((d,i)=>{
-
-let tr=document.createElement("tr")
-
-tr.innerHTML=
-"<td>"+cities[d.a].name+"</td>"+
-"<td>"+cities[d.b].name+"</td>"+
-"<td>"+d.km+"</td>"+
-"<td><button onclick='deleteDistance("+i+")'>X</button></td>"
-
-tbody.appendChild(tr)
-
-})
-
-save()
+cityHTML+=c+" ("+cities[c]+")<br>"
 
 }
 
-function addDistance(){
+document.getElementById("cityList").innerHTML=cityHTML
 
-let a=parseInt(document.getElementById("cityA").value)
-let b=parseInt(document.getElementById("cityB").value)
-let km=parseFloat(document.getElementById("distanceKM").value)
 
-if(isNaN(a)||isNaN(b)||isNaN(km))return
+let routeHTML="<b>Rute:</b><br>"
 
-distances.push({a,b,km})
+let shown=new Set()
 
-document.getElementById("distanceKM").value=""
+for(let a in graph){
 
-renderDistances()
+for(let b in graph[a]){
 
-}
+let key=[a,b].sort().join("-")
 
-function deleteDistance(i){
+if(!shown.has(key)){
 
-distances.splice(i,1)
-
-renderDistances()
+routeHTML+=a+" ⇄ "+b+" : "+graph[a][b]+" km<br>"
+shown.add(key)
 
 }
 
-function neighbors(cityIndex,userNation){
+}
+
+}
+
+document.getElementById("routeList").innerHTML=routeHTML
+
+}
+
+function getNeighbors(city,userCountry){
 
 let list=[]
 
-distances.forEach(d=>{
+if(graph[city]){
 
-if(d.a==cityIndex){
+for(let n in graph[city]){
 
+let cost=graph[city][n]
 let type="travel"
-let weight=d.km
 
-if(
-cities[d.a].country==userNation &&
-cities[d.b].country==userNation
-){
+if(cities[city]===userCountry && cities[n]===userCountry){
+
+cost=0.5
 type="angkot"
-weight=0.5
-}
-
-list.push({to:d.b,weight,type})
 
 }
 
-if(d.b==cityIndex){
-
-let type="travel"
-let weight=d.km
-
-if(
-cities[d.a].country==userNation &&
-cities[d.b].country==userNation
-){
-type="angkot"
-weight=0.5
-}
-
-list.push({to:d.a,weight,type})
-
-}
-
+list.push({
+city:n,
+cost:cost,
+type:type
 })
+
+}
+
+}
 
 return list
 
@@ -385,52 +257,56 @@ return list
 
 function findRoute(){
 
-let start=parseInt(document.getElementById("startCity").value)
-let target=parseInt(document.getElementById("targetCity").value)
-let nation=document.getElementById("userNation").value.trim()
+let userCountry=document.getElementById("homeCountry").value.trim()
+let start=document.getElementById("startCity").value
+let end=document.getElementById("endCity").value
 
-let dist=[]
-let prev=[]
-let type=[]
+let dist={}
+let prev={}
+let prevType={}
+let visited=new Set()
 
-cities.forEach((c,i)=>{
+for(let c in cities){
 
-dist[i]=Infinity
-prev[i]=null
+dist[c]=Infinity
+prev[c]=null
 
-})
+}
 
 dist[start]=0
 
-let visited=[]
-
 while(true){
 
-let u=-1
-let best=Infinity
+let closest=null
 
-dist.forEach((d,i)=>{
+for(let c in dist){
 
-if(!visited[i]&&d<best){
-best=d
-u=i
+if(!visited.has(c)){
+
+if(closest===null || dist[c]<dist[closest]){
+closest=c
 }
 
-})
+}
 
-if(u==-1||u==target)break
+}
 
-visited[u]=true
+if(closest===null)break
+if(closest===end)break
 
-neighbors(u,nation).forEach(n=>{
+visited.add(closest)
 
-let alt=dist[u]+n.weight
+let neighbors=getNeighbors(closest,userCountry)
 
-if(alt<dist[n.to]){
+neighbors.forEach(n=>{
 
-dist[n.to]=alt
-prev[n.to]=u
-type[n.to]=n.type
+let newDist=dist[closest]+n.cost
+
+if(newDist<dist[n.city]){
+
+dist[n.city]=newDist
+prev[n.city]=closest
+prevType[n.city]=n.type
 
 }
 
@@ -440,41 +316,39 @@ type[n.to]=n.type
 
 let path=[]
 let types=[]
+let cur=end
 
-let u=target
+while(cur){
 
-while(u!=null){
-
-path.unshift(u)
-types.unshift(type[u])
-u=prev[u]
+path.unshift(cur)
+types.unshift(prevType[cur])
+cur=prev[cur]
 
 }
 
 types.shift()
 
-let result=""
+let html="<b>Rute Terbaik:</b><br>"
 
 for(let i=0;i<path.length;i++){
 
-result+=cities[path[i]].name
+html+=path[i]
 
 if(i<types.length){
 
-result+=" → ("+types[i]+") → "
+html+=" → ("+types[i]+") → "
 
 }
 
 }
 
-result+="<br><br>Total cost: "+dist[target]
+html+="<br><br><b>Total Cost:</b> "+dist[end]
 
-document.getElementById("routeResult").innerHTML=result
+document.getElementById("result").innerHTML=html
 
 }
 
-renderCities()
-renderDistances()
+loadData()
 
 </script>
 
