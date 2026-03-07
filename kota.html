@@ -1,20 +1,18 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>MPL Route Calculator</title>
 
 <style>
-body{
-font-family:Arial,Helvetica,sans-serif;
-margin:0;
-background:#f4f4f4;
-padding:10px;
-}
 
-h2{
-margin-top:25px;
+body{
+font-family:Arial;
+background:#f4f4f4;
+margin:0;
+padding:10px;
 }
 
 .container{
@@ -23,27 +21,21 @@ margin:auto;
 background:white;
 padding:15px;
 border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,0.1);
 }
 
 input,select,textarea,button{
 width:100%;
 padding:8px;
-margin:5px 0;
+margin-top:5px;
+margin-bottom:10px;
 border-radius:6px;
 border:1px solid #ccc;
-box-sizing:border-box;
 }
 
 button{
 background:#2c7be5;
 color:white;
 border:none;
-cursor:pointer;
-}
-
-button:hover{
-background:#1a5fd0;
 }
 
 table{
@@ -52,7 +44,7 @@ border-collapse:collapse;
 margin-top:10px;
 }
 
-table th,table td{
+td,th{
 border:1px solid #ddd;
 padding:6px;
 font-size:14px;
@@ -64,61 +56,65 @@ gap:10px;
 flex-wrap:wrap;
 }
 
-.row > div{
+.row div{
 flex:1;
-min-width:120px;
 }
 
 .result{
-background:#f0f8ff;
+background:#eef7ff;
 padding:10px;
 border-radius:6px;
-margin-top:10px;
 }
 
-@media(max-width:600px){
-table th,table td{
-font-size:12px;
-}
-}
 </style>
+
 </head>
 
 <body>
 
 <div class="container">
 
-<h1>MPL Route Calculator</h1>
+<h2>User</h2>
+<input id="userNation" placeholder="Kewarganegaraan user">
 
-<h2>Pengaturan User</h2>
-<input id="userNation" placeholder="Kewarganegaraan User">
-
-<h2>Import Kota Massal</h2>
-<textarea id="bulkCities" rows="4" placeholder="Format: Kota,Negara"></textarea>
+<h2>Import Kota</h2>
+<textarea id="bulkCities" rows="5" placeholder="Jakarta,Indonesia"></textarea>
 <button onclick="importCities()">Import Kota</button>
 
 <h2>Tambah Kota</h2>
+
 <div class="row">
-<div><input id="cityName" placeholder="Nama Kota"></div>
-<div><input id="cityCountry" placeholder="Negara"></div>
+<div>
+<input id="cityName" placeholder="Nama kota">
 </div>
-<button onclick="addCity()">Tambah Kota</button>
+
+<div>
+<input id="cityCountry" placeholder="Negara">
+</div>
+</div>
+
+<button onclick="addCity()">Tambah</button>
 
 <h2>Daftar Kota</h2>
+
 <table id="cityTable">
+
 <thead>
 <tr>
 <th>Kota</th>
 <th>Negara</th>
-<th>Aksi</th>
+<th>Hapus</th>
 </tr>
 </thead>
+
 <tbody></tbody>
+
 </table>
 
-<h2>Tambah / Edit Jarak</h2>
+<h2>Tambah Jarak</h2>
 
 <div class="row">
+
 <div>
 <select id="cityA"></select>
 </div>
@@ -130,26 +126,32 @@ font-size:12px;
 <div>
 <input id="distanceKM" type="number" placeholder="KM">
 </div>
+
 </div>
 
-<button onclick="addDistance()">Simpan Jarak</button>
+<button onclick="addDistance()">Tambah Jarak</button>
 
 <h2>Daftar Jarak</h2>
+
 <table id="distanceTable">
+
 <thead>
 <tr>
 <th>Kota A</th>
 <th>Kota B</th>
 <th>KM</th>
-<th>Aksi</th>
+<th>Hapus</th>
 </tr>
 </thead>
+
 <tbody></tbody>
+
 </table>
 
 <h2>Cari Rute</h2>
 
 <div class="row">
+
 <div>
 <select id="startCity"></select>
 </div>
@@ -157,37 +159,43 @@ font-size:12px;
 <div>
 <select id="targetCity"></select>
 </div>
+
 </div>
 
 <button onclick="findRoute()">Cari Rute</button>
 
-<div class="result" id="routeResult"></div>
+<div id="routeResult" class="result"></div>
 
 </div>
 
 <script>
 
-let cities = JSON.parse(localStorage.getItem("cities") || "[]")
-let distances = JSON.parse(localStorage.getItem("distances") || "[]")
+let cities=JSON.parse(localStorage.getItem("cities")||"[]")
+let distances=JSON.parse(localStorage.getItem("distances")||"[]")
 
 function save(){
 localStorage.setItem("cities",JSON.stringify(cities))
 localStorage.setItem("distances",JSON.stringify(distances))
 }
 
-function refreshCitySelects(){
+function refreshDropdown(){
 
-let selects=["cityA","cityB","startCity","targetCity"]
+let ids=["cityA","cityB","startCity","targetCity"]
 
-selects.forEach(id=>{
-let s=document.getElementById(id)
-s.innerHTML=""
+ids.forEach(id=>{
+
+let select=document.getElementById(id)
+
+select.innerHTML=""
 
 cities.forEach((c,i)=>{
-let o=document.createElement("option")
-o.value=i
-o.textContent=c.name+" ("+c.country+")"
-s.appendChild(o)
+
+let opt=document.createElement("option")
+opt.value=i
+opt.textContent=c.name+" ("+c.country+")"
+
+select.appendChild(opt)
+
 })
 
 })
@@ -205,14 +213,14 @@ let tr=document.createElement("tr")
 
 tr.innerHTML=
 "<td>"+c.name+"</td>"+
-"<td><input value='"+c.country+"' onchange='editCountry("+i+",this.value)'></td>"+
-"<td><button onclick='deleteCity("+i+")'>Hapus</button></td>"
+"<td>"+c.country+"</td>"+
+"<td><button onclick='deleteCity("+i+")'>X</button></td>"
 
 tbody.appendChild(tr)
 
 })
 
-refreshCitySelects()
+refreshDropdown()
 save()
 
 }
@@ -222,7 +230,7 @@ function addCity(){
 let name=document.getElementById("cityName").value.trim()
 let country=document.getElementById("cityCountry").value.trim()
 
-if(!name || !country) return
+if(!name||!country)return
 
 cities.push({name,country})
 
@@ -230,14 +238,6 @@ document.getElementById("cityName").value=""
 document.getElementById("cityCountry").value=""
 
 renderCities()
-
-}
-
-function editCountry(i,val){
-
-cities[i].country=val
-save()
-refreshCitySelects()
 
 }
 
@@ -252,17 +252,31 @@ function importCities(){
 
 let text=document.getElementById("bulkCities").value.trim()
 
-if(!text) return
+if(!text)return
 
-text.split("\n").forEach(line=>{
+let lines=text.split("\n")
 
-let p=line.split(",")
+lines.forEach(line=>{
 
-if(p.length>=2){
+line=line.trim()
+
+if(!line)return
+
+let parts
+
+if(line.includes(",")) parts=line.split(",")
+else if(line.includes("|")) parts=line.split("|")
+else if(line.includes("-")) parts=line.split("-")
+else parts=line.split(" ")
+
+if(parts.length>=2){
+
+let city=parts[0].trim()
+let country=parts[1].trim()
 
 cities.push({
-name:p[0].trim(),
-country:p[1].trim()
+name:city,
+country:country
 })
 
 }
@@ -278,6 +292,7 @@ renderCities()
 function renderDistances(){
 
 let tbody=document.querySelector("#distanceTable tbody")
+
 tbody.innerHTML=""
 
 distances.forEach((d,i)=>{
@@ -288,7 +303,7 @@ tr.innerHTML=
 "<td>"+cities[d.a].name+"</td>"+
 "<td>"+cities[d.b].name+"</td>"+
 "<td>"+d.km+"</td>"+
-"<td><button onclick='deleteDistance("+i+")'>Hapus</button></td>"
+"<td><button onclick='deleteDistance("+i+")'>X</button></td>"
 
 tbody.appendChild(tr)
 
@@ -304,7 +319,7 @@ let a=parseInt(document.getElementById("cityA").value)
 let b=parseInt(document.getElementById("cityB").value)
 let km=parseFloat(document.getElementById("distanceKM").value)
 
-if(isNaN(a)||isNaN(b)||isNaN(km)) return
+if(isNaN(a)||isNaN(b)||isNaN(km))return
 
 distances.push({a,b,km})
 
@@ -317,55 +332,54 @@ renderDistances()
 function deleteDistance(i){
 
 distances.splice(i,1)
+
 renderDistances()
 
 }
 
-function getNeighbors(cityIndex,userNation){
+function neighbors(cityIndex,userNation){
 
-let result=[]
+let list=[]
 
 distances.forEach(d=>{
 
-if(d.a===cityIndex){
+if(d.a==cityIndex){
 
-let target=d.b
 let type="travel"
 let weight=d.km
 
 if(
-cities[cityIndex].country===userNation &&
-cities[target].country===userNation
+cities[d.a].country==userNation &&
+cities[d.b].country==userNation
 ){
 type="angkot"
 weight=0.5
 }
 
-result.push({to:target,weight,type})
+list.push({to:d.b,weight,type})
 
 }
 
-if(d.b===cityIndex){
+if(d.b==cityIndex){
 
-let target=d.a
 let type="travel"
 let weight=d.km
 
 if(
-cities[cityIndex].country===userNation &&
-cities[target].country===userNation
+cities[d.a].country==userNation &&
+cities[d.b].country==userNation
 ){
 type="angkot"
 weight=0.5
 }
 
-result.push({to:target,weight,type})
+list.push({to:d.a,weight,type})
 
 }
 
 })
 
-return result
+return list
 
 }
 
@@ -373,15 +387,17 @@ function findRoute(){
 
 let start=parseInt(document.getElementById("startCity").value)
 let target=parseInt(document.getElementById("targetCity").value)
-let userNation=document.getElementById("userNation").value.trim()
+let nation=document.getElementById("userNation").value.trim()
 
 let dist=[]
 let prev=[]
-let prevType=[]
+let type=[]
 
-cities.forEach((_,i)=>{
+cities.forEach((c,i)=>{
+
 dist[i]=Infinity
 prev[i]=null
+
 })
 
 dist[start]=0
@@ -394,20 +410,19 @@ let u=-1
 let best=Infinity
 
 dist.forEach((d,i)=>{
-if(!visited[i] && d<best){
+
+if(!visited[i]&&d<best){
 best=d
 u=i
 }
+
 })
 
-if(u===-1) break
-if(u===target) break
+if(u==-1||u==target)break
 
 visited[u]=true
 
-let neighbors=getNeighbors(u,userNation)
-
-neighbors.forEach(n=>{
+neighbors(u,nation).forEach(n=>{
 
 let alt=dist[u]+n.weight
 
@@ -415,7 +430,7 @@ if(alt<dist[n.to]){
 
 dist[n.to]=alt
 prev[n.to]=u
-prevType[n.to]=n.type
+type[n.to]=n.type
 
 }
 
@@ -428,35 +443,33 @@ let types=[]
 
 let u=target
 
-while(u!==null){
+while(u!=null){
 
 path.unshift(u)
-
-types.unshift(prevType[u])
-
+types.unshift(type[u])
 u=prev[u]
 
 }
 
 types.shift()
 
-let text=""
+let result=""
 
 for(let i=0;i<path.length;i++){
 
-text+=cities[path[i]].name
+result+=cities[path[i]].name
 
 if(i<types.length){
 
-text+=" → ("+types[i]+") → "
+result+=" → ("+types[i]+") → "
 
 }
 
 }
 
-text+="<br><br>Total cost: "+dist[target]
+result+="<br><br>Total cost: "+dist[target]
 
-document.getElementById("routeResult").innerHTML=text
+document.getElementById("routeResult").innerHTML=result
 
 }
 
