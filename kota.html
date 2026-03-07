@@ -2,6 +2,9 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Peta Rute Kota</title>
 
 <style>
@@ -9,27 +12,40 @@
 body{
 font-family:Arial;
 background:#f2f2f2;
-padding:20px;
+padding:10px;
+margin:0;
 }
 
 .container{
 background:white;
-padding:20px;
+padding:15px;
 border-radius:10px;
 max-width:900px;
 margin:auto;
 }
 
+h1{
+font-size:22px;
+}
+
+h2{
+font-size:18px;
+margin-top:25px;
+}
+
 input,select,button{
-padding:8px;
-margin:5px;
+width:100%;
+padding:12px;
+margin-top:8px;
+font-size:16px;
+box-sizing:border-box;
 }
 
 button{
 background:#2d7ef7;
 color:white;
 border:none;
-border-radius:5px;
+border-radius:8px;
 cursor:pointer;
 }
 
@@ -42,6 +58,9 @@ background:#f7f7f7;
 padding:10px;
 border-radius:6px;
 margin-top:10px;
+max-height:150px;
+overflow:auto;
+font-size:14px;
 }
 
 .result{
@@ -49,7 +68,17 @@ background:#e9f3ff;
 padding:15px;
 border-radius:6px;
 margin-top:15px;
-font-size:18px;
+font-size:16px;
+word-wrap:break-word;
+}
+
+@media(min-width:700px){
+
+input,select,button{
+width:auto;
+min-width:200px;
+}
+
 }
 
 </style>
@@ -100,10 +129,8 @@ let cities={}
 let graph={}
 
 function saveData(){
-
 localStorage.setItem("cities",JSON.stringify(cities))
 localStorage.setItem("graph",JSON.stringify(graph))
-
 }
 
 function loadData(){
@@ -134,6 +161,9 @@ saveData()
 updateLists()
 updateDropdowns()
 
+document.getElementById("cityName").value=""
+document.getElementById("countryName").value=""
+
 }
 
 function addRoute(){
@@ -151,6 +181,8 @@ graph[b][a]=d
 saveData()
 updateLists()
 
+document.getElementById("distance").value=""
+
 }
 
 function updateDropdowns(){
@@ -166,7 +198,6 @@ s.innerHTML=""
 for(let c in cities){
 
 let opt=document.createElement("option")
-
 opt.value=c
 opt.text=c
 
@@ -183,9 +214,7 @@ function updateLists(){
 let cityHTML="<b>Daftar Kota:</b><br>"
 
 for(let c in cities){
-
 cityHTML+=c+" ("+cities[c]+")<br>"
-
 }
 
 document.getElementById("cityList").innerHTML=cityHTML
@@ -194,13 +223,9 @@ document.getElementById("cityList").innerHTML=cityHTML
 let routeHTML="<b>Daftar Rute:</b><br>"
 
 for(let a in graph){
-
 for(let b in graph[a]){
-
 routeHTML+=a+" → "+b+" : "+graph[a][b]+" km<br>"
-
 }
-
 }
 
 document.getElementById("routeList").innerHTML=routeHTML
@@ -217,10 +242,8 @@ let prev={}
 let visited=new Set()
 
 for(let c in graph){
-
 dist[c]=Infinity
 prev[c]=null
-
 }
 
 dist[start]=0
@@ -232,13 +255,9 @@ let closest=null
 for(let c in dist){
 
 if(!visited.has(c)){
-
 if(closest===null||dist[c]<dist[closest]){
-
 closest=c
-
 }
-
 }
 
 }
@@ -253,10 +272,8 @@ for(let n in graph[closest]){
 let newDist=dist[closest]+graph[closest][n]
 
 if(newDist<dist[n]){
-
 dist[n]=newDist
 prev[n]=closest
-
 }
 
 }
@@ -267,10 +284,8 @@ let path=[]
 let cur=end
 
 while(cur){
-
 path.unshift(cur)
 cur=prev[cur]
-
 }
 
 document.getElementById("result").innerHTML=
