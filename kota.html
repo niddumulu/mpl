@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Route Finder MPL</title>
+<title>MPL Route Finder</title>
 
 <style>
 
@@ -42,7 +42,7 @@ background:#f7f7f7;
 padding:10px;
 border-radius:6px;
 margin-top:10px;
-max-height:150px;
+max-height:180px;
 overflow:auto;
 }
 
@@ -72,23 +72,25 @@ margin-top:15px;
 
 <div class="box" id="cityList"></div>
 
-<h2>Tambah Rute Antar Kota</h2>
+
+<h2>Tambah Travel Antar Negara</h2>
 
 <select id="cityA"></select>
 <select id="cityB"></select>
 
 <input id="distance" type="number" placeholder="Jarak km">
 
-<button onclick="addRoute()">Tambah Rute</button>
+<button onclick="addRoute()">Tambah Travel</button>
 
 <div class="box" id="routeList"></div>
+
 
 <h2>Cari Rute</h2>
 
 <select id="startCity"></select>
 <select id="endCity"></select>
 
-<button onclick="findRoute()">Cari</button>
+<button onclick="findRoute()">Cari Rute</button>
 
 <div class="result" id="result"></div>
 
@@ -124,11 +126,11 @@ function addCity(){
 let city=document.getElementById("cityName").value.trim()
 let country=document.getElementById("countryName").value.trim()
 
-if(!city || !country)return
+if(!city || !country) return
 
 cities[city]=country
 
-if(!graph[city])graph[city]={}
+if(!graph[city]) graph[city]={}
 
 document.getElementById("cityName").value=""
 document.getElementById("countryName").value=""
@@ -145,10 +147,10 @@ let a=document.getElementById("cityA").value
 let b=document.getElementById("cityB").value
 let d=parseFloat(document.getElementById("distance").value)
 
-if(!a || !b || isNaN(d))return
+if(!a || !b || isNaN(d)) return
 
-if(!graph[a])graph[a]={}
-if(!graph[b])graph[b]={}
+if(!graph[a]) graph[a]={}
+if(!graph[b]) graph[b]={}
 
 graph[a][b]=d
 graph[b][a]=d
@@ -195,8 +197,7 @@ cityHTML+=c+" ("+cities[c]+")<br>"
 
 document.getElementById("cityList").innerHTML=cityHTML
 
-
-let routeHTML="<b>Rute:</b><br>"
+let routeHTML="<b>Travel Routes:</b><br>"
 
 let shown=new Set()
 
@@ -225,6 +226,8 @@ function getNeighbors(city,userCountry){
 
 let list=[]
 
+/* ANGKOT ke semua kota dalam negara user */
+
 if(cities[city]===userCountry){
 
 for(let c in cities){
@@ -243,11 +246,13 @@ type:"angkot"
 
 }
 
+/* TRAVEL antar negara */
+
 if(graph[city]){
 
 for(let n in graph[city]){
 
-if(cities[city]!==cities[n]){
+if(cities[n]!==cities[city]){
 
 list.push({
 city:n,
@@ -301,8 +306,8 @@ closest=c
 
 }
 
-if(closest===null)break
-if(closest===end)break
+if(closest===null) break
+if(closest===end) break
 
 visited.add(closest)
 
